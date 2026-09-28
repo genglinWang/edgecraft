@@ -547,6 +547,7 @@ class OfflineProfiler:
         from edgecraft.models import ensure_registries_initialized
         ensure_registries_initialized()
         self.edge_runner_path = edge_runner_path or self._find_edge_runner()
+        self.results_dir = Path(settings.EDGECRAFT_ROOT) / "outputs" / "profiling"
 
     def _find_edge_runner(self) -> Optional[str]:
         """Find edge-runner directory."""
@@ -640,7 +641,7 @@ class OfflineProfiler:
         if not self.edge_runner_path:
             return ""
         stdout_log = os.path.join(
-            self.edge_runner_path, "collected_results", job_id, "stdout.log"
+            self.results_dir, job_id, "stdout.log"
         )
         if not os.path.exists(stdout_log):
             return ""
@@ -655,7 +656,7 @@ class OfflineProfiler:
         if not self.edge_runner_path:
             return ""
         stderr_log = os.path.join(
-            self.edge_runner_path, "collected_results", job_id, "stderr.log"
+            self.results_dir, job_id, "stderr.log"
         )
         if not os.path.exists(stderr_log):
             return ""
@@ -670,7 +671,7 @@ class OfflineProfiler:
         if not self.edge_runner_path:
             return {}
         result_json = os.path.join(
-            self.edge_runner_path, "collected_results", job_id, "result.json"
+            self.results_dir, job_id, "result.json"
         )
         if not os.path.exists(result_json):
             return {}
@@ -938,6 +939,7 @@ class OfflineProfiler:
                     "--edge", device_ip,
                     "--key", ssh_key,
                     "--job-dir", job_dir,
+                    "--collect-out", str(self.results_dir),
                     "--stream",
                     "--collect-retries", "4",
                     "--collect-retry-delay", "3",
@@ -1574,7 +1576,7 @@ python3 benchmark.py
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                cwd=self.edge_runner_path,
+                cwd=settings.EDGECRAFT_ROOT,
             )
             return {
                 "status": "success" if result.returncode == 0 else "error",

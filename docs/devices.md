@@ -23,6 +23,19 @@ Jetson images must match the host JetPack generation. Check it with
 explains the host/framework dependency. PyTorch, ONNX Runtime, and TensorRT are
 separate execution choices: importing TensorRT does not imply that PyTorch or
 ONNX Runtime uses the GPU. The runtime checks below print the actual backend.
+The Xavier recipe uses CPU PyTorch and GPU TensorRT. ONNX Runtime uses its CPU
+provider in these recipes.
+
+The setup commands below were checked on all five platforms. Each environment
+loaded a small model and produced the expected output in three runtimes:
+
+| Target | PyTorch | ONNX Runtime | Third runtime |
+| --- | --- | --- | --- |
+| Orin | 2.7.0 / CUDA | 1.23.2 / CPU | TensorRT 10.3 / CUDA |
+| Xavier NX | 2.4.1 / CPU | 1.19.2 / CPU | TensorRT 8.5 / CUDA |
+| TX2 | 1.10.0 / CUDA | 1.10.0 / CPU | TensorRT 8.2 / CUDA |
+| Pi 5 | 2.9.1 / CPU | 1.24.3 / CPU | LiteRT 2.1.5 / CPU |
+| Desktop CPU | 2.9.1 / CPU | 1.24.3 / CPU | LiteRT 2.1.5 / CPU |
 
 ## Docker targets
 

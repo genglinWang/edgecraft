@@ -531,6 +531,33 @@ class _GenericDatasetConfigHandler(ModalityHandler):
         config_dir.mkdir(parents=True, exist_ok=True)
         data_yaml_dst = config_dir / "data.yaml"
         ds_path = Path(dataset_path).resolve()
+        if ds_path.is_file() and ds_path.suffix.lower() in {".yaml", ".yml"}:
+            payload = _yaml.safe_load(ds_path.read_text())
+            if not isinstance(payload, dict):
+                raise ValueError("Dataset configuration must contain a YAML mapping")
+
+            def absolute(value):
+                path = Path(value).expanduser()
+                return str(path if path.is_absolute() else (ds_path.parent / path).resolve())
+
+            # Preflight may already have resolved the dataset schema and split
+            # contract. Preserve it instead of treating data.yaml as input data.
+            for key in ("dataset_path", "dataset_root", "data_root", "root", "path"):
+                if isinstance(payload.get(key), str) and payload[key]:
+                    payload[key] = absolute(payload[key])
+            for container in (payload, payload.get("schema", {})):
+                if not isinstance(container, dict):
+                    continue
+                for key in ("files", "label_files"):
+                    if isinstance(container.get(key), list):
+                        container[key] = [absolute(value) for value in container[key]]
+            manifest = payload.get("split_manifest")
+            if isinstance(manifest, dict) and manifest.get("path"):
+                manifest["path"] = absolute(manifest["path"])
+            payload.setdefault("modality", self.modality.value)
+            payload.setdefault("task_type", getattr(getattr(variant, "task_type", None), "value", "unknown"))
+            data_yaml_dst.write_text(_yaml.safe_dump(payload, sort_keys=False))
+            return
         schema = _infer_table_schema(ds_path)
         payload = {
             "dataset_path": str(ds_path),

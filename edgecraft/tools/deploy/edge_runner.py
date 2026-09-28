@@ -17,6 +17,7 @@ import shutil
 import time
 import re
 import hashlib
+import uuid
 from typing import Dict, Any, Optional, List, Iterable
 from pathlib import Path
 
@@ -769,7 +770,8 @@ class EdgeRunner(BaseDeployer):
         self,
         script_name: str,
         args: list,
-        timeout: int = 600
+        timeout: int = 600,
+        cwd: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Run an edge-runner script."""
         if not self.edge_runner_path:
@@ -786,7 +788,7 @@ class EdgeRunner(BaseDeployer):
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                cwd=self.edge_runner_path
+                cwd=cwd or settings.EDGECRAFT_ROOT,
             )
 
             status = "success" if result.returncode == 0 else "error"
@@ -880,7 +882,7 @@ class EdgeRunner(BaseDeployer):
 
         # Generate job ID
         safe_device_id = device_id.replace(" ", "_").replace("/", "-")
-        job_id = f"edgecraft_{safe_device_id}_{int(time.time())}"
+        job_id = f"edgecraft_{safe_device_id}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
 
         # Create job bundle
         job_dir = tempfile.mkdtemp(
@@ -1040,10 +1042,13 @@ class EdgeRunner(BaseDeployer):
 
             # Run job and collect results. collect_results can fail transiently
             # due to tar validation races on unstable links; retry once.
+            collection_dir = Path(workspace_path or job_dir).resolve() / ".edgecraft" / "edge-results"
+            collection_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             collect_cmd = [
                 "--edge", device_ip,
                 "--key", ssh_key,
                 "--job-dir", job_dir,
+                "--collect-out", str(collection_dir),
                 "--stream",
                 "--collect-retries", "4",
                 "--collect-retry-delay", "3",
@@ -1086,6 +1091,7 @@ class EdgeRunner(BaseDeployer):
                     "run_job_and_collect.sh",
                     collect_cmd,
                     timeout=effective_timeout + 120,
+                    cwd=job_dir,
                 )
                 if result.get("status") == "success":
                     break
@@ -1101,9 +1107,7 @@ class EdgeRunner(BaseDeployer):
                     continue
                 break
             if result["status"] == "success":
-                results_dir = os.path.join(
-                    self.edge_runner_path, "collected_results", job_id
-                )
+                results_dir = str(collection_dir / job_id)
                 parsed = self._parse_results(results_dir)
                 if not parsed.get("metrics"):
                     trt_metrics = _parse_trtexec_metrics(result.get("stdout", ""))

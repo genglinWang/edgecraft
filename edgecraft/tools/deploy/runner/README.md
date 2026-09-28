@@ -11,7 +11,7 @@ Supply the target device and SSH key explicitly:
 export DEVICE_HOST=user@device-host
 export SSH_KEY_PATH=/path/to/private_key
 
-bash edge-runner/server/run_job_and_collect.sh \
+bash edgecraft/tools/deploy/runner/server/run_job_and_collect.sh \
   --edge "$DEVICE_HOST" \
   --key "$SSH_KEY_PATH" \
   --job-dir ./job \
@@ -43,7 +43,7 @@ from a trusted controller and use a dedicated, least-privilege device account.
 Linux devices with systemd can install the inbox watcher:
 
 ```bash
-cd edge-runner/edge
+cd edgecraft/tools/deploy/runner/edge
 sudo EDGE_USER=edgeuser bash install.sh
 ```
 

@@ -5203,7 +5203,7 @@ def _job_result_to_trial(
     start_time: float,
 ) -> TrialResult:
     """Fold scheduler evidence back into the existing TrialResult contract."""
-    edge_result = dict((job_result.diagnostics or {}).get("edge_result") or {})
+    edge_result = _edge_result_from_job_result(job_result)
     runtime_fields = _resolve_edge_runtime_fields(edge_result)
     trial.stdout = job_result.stdout or ""
     trial.stderr = job_result.stderr or ""
@@ -5569,7 +5569,10 @@ def _finalize_scheduler_verification(
         host_status = (trial.observations.get("component_roundtrip") or {}).get(
             "status"
         )
-        if payload_contract.outcome == "fail":
+        # infer.py may map payload fields to model input names. As in the
+        # direct backend, an executed host round trip resolves a static-name
+        # mismatch; full device execution and quality parity are still required.
+        if payload_contract.outcome == "fail" and host_status != "success":
             contract_errors.append(
                 "artifact and evaluation payload have an interface mismatch"
             )

@@ -87,6 +87,20 @@ print(json.dumps({"status": "success", "probe": "efficiency", "training_steps": 
     assert checked["valid"] is False
 
 
+def test_controller_guard_imports_candidate_sibling_modules(tmp_path) -> None:
+    (tmp_path / "loader.py").write_text("def describe():\n    return 'local-data'\n")
+    candidate = tmp_path / "train.py"
+    candidate.write_text(
+        "import json\nfrom loader import describe\n"
+        "print(json.dumps({'status': 'success', 'probe': 'efficiency', "
+        "'training_steps': 0, 'description': describe()}))\n"
+    )
+    completed, payload = _run(candidate)
+    assert completed.returncode == 0
+    assert payload["description"] == "local-data"
+    assert payload["p1_guard_attestation"]["status"] == "passed"
+
+
 def test_controller_guard_blocks_child_process_escape(tmp_path) -> None:
     candidate = tmp_path / "train.py"
     candidate.write_text(

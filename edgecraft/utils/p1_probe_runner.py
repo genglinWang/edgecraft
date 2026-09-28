@@ -268,6 +268,7 @@ def main() -> int:
     candidate_exit_code = 0
     original_sys_setprofile = sys.setprofile
     original_threading_setprofile = threading.setprofile
+    original_sys_path = sys.path[:]
     builtins.__import__ = guarded_import
     original_sys_setprofile(guard.profile)
     original_threading_setprofile(guard.profile)
@@ -275,6 +276,9 @@ def main() -> int:
     threading.setprofile = guard.blocked_call("threading.setprofile")
     try:
         sys.argv = [str(candidate), *candidate_args]
+        # Match `python train.py`: sibling modules (such as loader.py) belong
+        # on the import path even when this controller wrapper lives elsewhere.
+        sys.path.insert(0, str(candidate.parent))
         with redirect_stdout(_Tee(sys.__stdout__, captured)):
             try:
                 runpy.run_path(str(candidate), run_name="__main__")
@@ -293,6 +297,7 @@ def main() -> int:
         sys.setprofile = original_sys_setprofile
         threading.setprofile = original_threading_setprofile
         builtins.__import__ = original_import
+        sys.path[:] = original_sys_path
 
     payload = _last_json(captured.getvalue())
     if not payload:

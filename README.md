@@ -20,6 +20,8 @@ Guoliang Xing, and Zhenyu Yan.
 
 Use a Linux x86_64 training host with Python 3.12 and an NVIDIA GPU. The edge
 device runs inference; it does not need the controller's Python environment.
+The pinned controller stack uses CUDA 12.8 PyTorch wheels and needs a compatible
+NVIDIA driver.
 
 ```bash
 git clone https://github.com/genglinWang/edgecraft.git
