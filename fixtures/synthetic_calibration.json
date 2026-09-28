@@ -1,0 +1,39 @@
+{
+  "pairs": [
+    {
+      "absolute_error": 2.0,
+      "cheap_protocol": {
+        "actual_repetitions": 5,
+        "actual_warmup": 5,
+        "latency_statistic": "p95",
+        "latency_uncertainty": "sample_std_across_session_p95",
+        "measurement_contract_version": "edge_efficiency_v3",
+        "measurement_sessions": 3,
+        "precision": "fp16",
+        "runtime": "onnx"
+      },
+      "cheap_sigma": 0.5,
+      "cheap_value": 13.0,
+      "environment_fingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "full_protocol": {
+        "actual_repetitions": 5,
+        "actual_warmup": 5,
+        "latency_statistic": "p95",
+        "latency_uncertainty": "sample_std_across_session_p95",
+        "measurement_contract_version": "edge_efficiency_v3",
+        "measurement_sessions": 3,
+        "precision": "fp16",
+        "runtime": "onnx"
+      },
+      "full_sigma": 0.4,
+      "full_value": 15.0,
+      "graph_hash": "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+      "pair_id": "cal_synthetic_latency",
+      "protocol_fingerprint": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+      "quantity": "Latency"
+    }
+  ],
+  "schema_version": "edgecraft_public_calibration_v1",
+  "sharing_policy": "Pair-backed physical metric deltas only; tenant IDs, dataset IDs, workspace paths, model files, evidence transcripts, and timestamps are excluded.",
+  "synthetic": true
+}

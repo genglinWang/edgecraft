@@ -1,0 +1,10 @@
+[Unit]
+Description=Run EdgeCraft Edge cleanup daily at 03:00
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=edgecraft-edge-cleanup.service
+
+[Install]
+WantedBy=timers.target

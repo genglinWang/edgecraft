@@ -1,0 +1,41 @@
+# EdgeCraft Knowledge Base Crawl Sources
+# =====================================
+# Edit this file to customize what gets crawled by `edgecraft knowledge build`.
+#
+# kaggle.keywords  — search terms passed to the Kaggle Kernels API
+# github.repos     — explicit "owner/repo" repos to crawl (fetches README.md)
+
+kaggle:
+  keywords:
+    - "edge ai deployment"
+    - "jetson inference"
+    - "tinyml"
+    - "onnx export mobile"
+    - "tensorrt optimization"
+    - "yolo edge deployment"
+
+github:
+  repos:
+    # Core edge AI frameworks
+    - "ultralytics/ultralytics"
+    - "NVIDIA-AI-IOT/jetson-inference"
+    - "tensorflow/tflite-micro"
+    - "microsoft/onnxruntime"
+
+    # Edge deployment tools
+    - "NVIDIA-AI-IOT/trt_pose"
+    - "NVIDIA-AI-IOT/torch2trt"
+    - "NVIDIA-AI-IOT/deepstream_python_apps"
+
+    # TinyML and embedded
+    - "mit-han-lab/tinyml"
+    - "ARM-software/ML-zoo"
+    - "mlcommons/tiny"
+
+    # Model optimization
+    - "huggingface/optimum"
+    - "intel/neural-compressor"
+
+    # Specific edge AI projects
+    - "dusty-nv/jetson-containers"
+    - "PINTO0309/PINTO_model_zoo"

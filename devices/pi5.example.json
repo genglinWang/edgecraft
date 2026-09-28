@@ -1,0 +1,15 @@
+{
+  "devices": {
+    "raspberry_pi_5": {
+      "execution_mode": "native",
+      "inline_runner": true,
+      "remote_base": "~/.edgecraft-runner",
+      "runtimes": ["pytorch", "onnxruntime", "litert"],
+      "native_envs": {
+        "pytorch": "${PI_RUNTIME_ROOT}/torch/bin/python",
+        "onnxruntime": "${PI_RUNTIME_ROOT}/onnx/bin/python",
+        "litert": "${PI_RUNTIME_ROOT}/litert/bin/python"
+      }
+    }
+  }
+}

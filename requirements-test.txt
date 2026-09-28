@@ -1,0 +1,12 @@
+# Dependency-light environment for tests, CLI help, and offline examples.
+# This intentionally excludes model frameworks and device runtimes.
+pytest==9.1.1
+pydantic==2.13.5
+python-dotenv==1.2.3
+loguru==0.7.3
+PyYAML==6.0.3
+click==8.5.0
+rich==15.0.0
+fastapi==0.141.1
+httpx==0.28.1
+requests==2.32.5

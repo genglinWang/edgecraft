@@ -1,0 +1,9 @@
+ARG BASE_IMAGE=dustynv/pytorch:2.7-r36.4.0
+FROM ${BASE_IMAGE}
+# Keep the JetPack-specific PyTorch/CUDA stack supplied by the base image.
+RUN python3 -m pip freeze | grep -E '^torch(vision|audio)?==' > /tmp/torch-constraints.txt
+RUN python3 -m pip install --no-cache-dir -c /tmp/torch-constraints.txt numpy==1.26.4 \
+    onnx==1.17.0 onnxruntime==1.23.2 transformers==4.57.6 \
+    timm==1.0.25 ultralytics==8.4.22 soundfile pyyaml psutil
+COPY check_runtime.py /opt/edgecraft/check_runtime.py
+WORKDIR /workspace

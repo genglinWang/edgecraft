@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=dustynv/pytorch:2.1-r35.4.1
+FROM ${BASE_IMAGE}
+RUN python3 -m pip freeze | grep -E '^torch(vision|audio)?==' > /tmp/torch-constraints.txt
+RUN python3 -m pip install --no-cache-dir -c /tmp/torch-constraints.txt numpy==1.24.4 \
+    onnx==1.15.0 onnxruntime==1.19.2 transformers==4.46.3 \
+    timm==0.9.16 ultralytics==8.4.31 soundfile pyyaml psutil
+COPY check_runtime.py /opt/edgecraft/check_runtime.py
+WORKDIR /workspace

@@ -1,0 +1,37 @@
+{
+  "schema_version": "edgecraft_public_rules_v1",
+  "sharing_policy": "Only verified and sanitized hardware facts are shared across tenants; raw failures, paths, tenant IDs, datasets, code, and artifacts are excluded.",
+  "synthetic": true,
+  "verified_compatibility_rules": [
+    {
+      "confidence": 1.0,
+      "device": "review_device",
+      "environment_fingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "precision": "fp16",
+      "pattern": {
+        "artifact_predicate": {
+          "artifact_format": "onnx",
+          "artifact_properties": {
+            "ir_version": 99
+          }
+        }
+      },
+      "reproduced_error_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "rule_id": "rule_synthetic_ir_version",
+      "runtime": "onnx",
+      "status": "verified",
+      "support_count": 1,
+      "verification_protocol": {
+        "device": "review_device",
+        "environment_fingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "gate_eligible": true,
+        "precision": "fp16",
+        "reproduction_scope": "artifact_header",
+        "runtime": "onnx",
+        "runtime_version": "synthetic-review-version"
+      },
+      "verdict": "unsupported",
+      "version_range": "synthetic-review-version"
+    }
+  ]
+}

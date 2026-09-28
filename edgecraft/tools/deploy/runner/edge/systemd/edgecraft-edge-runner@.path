@@ -1,0 +1,9 @@
+[Unit]
+Description=EdgeCraft Edge Runner inbox watcher for user %i
+
+[Path]
+PathExistsGlob=/var/lib/edgecraft-edge-runner/inbox/*.tar.gz
+Unit=edgecraft-edge-runner@%i.service
+
+[Install]
+WantedBy=multi-user.target

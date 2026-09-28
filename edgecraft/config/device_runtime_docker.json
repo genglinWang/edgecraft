@@ -1,0 +1,35 @@
+{
+  "devices": {
+    "jetson_orin_agx": {
+      "execution_mode": "docker",
+      "remote_base": "~/.edgecraft-runner",
+      "inline_runner": true,
+      "runtimes": ["pytorch", "onnxruntime", "tensorrt"]
+    },
+    "jetson_xavier_nx": {
+      "execution_mode": "docker",
+      "remote_base": "~/.edgecraft-runner",
+      "inline_runner": true,
+      "runtimes": ["pytorch", "onnxruntime", "tensorrt"]
+    },
+    "jetson_tx2": {
+      "execution_mode": "docker",
+      "remote_base": "~/.edgecraft-runner",
+      "inline_runner": true,
+      "runner_min_free_mb": 128,
+      "runtimes": ["pytorch", "onnxruntime", "tensorrt"]
+    },
+    "raspberry_pi_5": {
+      "execution_mode": "native",
+      "remote_base": "~/.edgecraft-runner",
+      "inline_runner": true,
+      "runtimes": ["pytorch", "onnxruntime", "litert"]
+    },
+    "x86_cpu_desktop": {
+      "execution_mode": "docker",
+      "remote_base": "~/.edgecraft-runner",
+      "inline_runner": true,
+      "runtimes": ["pytorch", "onnxruntime", "litert"]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+[Unit]
+Description=EdgeCraft Edge storage cleanup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/edgecraft-edge-runner.env
+ExecStart=/usr/local/bin/edgecraft-edge-cleanup
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

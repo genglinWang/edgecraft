@@ -1,0 +1,23 @@
+# Validated controller stack: Linux x86_64, Python 3.12, CUDA 12.8 wheels.
+# Use as constraints: pip install -c requirements-controller.txt -e .
+torch==2.9.1
+torchvision==0.24.1
+torchaudio==2.9.1
+numpy==2.3.5
+pandas==2.3.3
+scipy==1.16.3
+scikit-learn==1.7.2
+datasets==4.8.5
+transformers==4.57.6
+huggingface_hub==0.36.2
+speechbrain==1.0.3
+timm==1.0.25
+ultralytics==8.4.22
+onnx==1.20.1
+onnxscript==0.6.2
+langchain==1.2.12
+langchain-core==1.2.19
+langchain-openai==1.1.11
+langgraph==1.1.2
+openai==2.28.0
+chromadb==1.5.5

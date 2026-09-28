@@ -1,0 +1,316 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# All cleanup is recoverable. The guard is installed per edge user.
+export PATH="$HOME/.local/edgecraft-safe-bin:$PATH"
+
+# EdgeCraft Edge Runner (MVP)
+#
+# Usage:
+#   edgecraft-edge-runner process-inbox
+#
+# Reads /etc/edgecraft-edge-runner.env for configuration.
+
+CONFIG_FILE="/etc/edgecraft-edge-runner.env"
+if [[ -f "$CONFIG_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+fi
+
+EDGE_USER="${EDGE_USER:-$(id -un)}"
+BASE_DIR="${BASE_DIR:-/var/lib/edgecraft-edge-runner}"
+
+INBOX="$BASE_DIR/inbox"
+WORK="$BASE_DIR/work"
+OUTBOX="$BASE_DIR/outbox"
+DONE="$BASE_DIR/done"
+FAILED="$BASE_DIR/failed"
+TMP="$BASE_DIR/tmp"
+
+PUSH_RESULTS="${PUSH_RESULTS:-0}"
+PUSH_DEST="${PUSH_DEST:-}"
+PUSH_SSH_KEY="${PUSH_SSH_KEY:-}"
+PUSH_ACCEPT_NEW="${PUSH_ACCEPT_NEW:-0}"
+RUNNER_CLEANUP_AGE_MINUTES="${RUNNER_CLEANUP_AGE_MINUTES:-120}"
+RUNNER_MIN_FREE_MB="${RUNNER_MIN_FREE_MB:-2048}"
+RUNNER_KEEP_RECENT_OUTBOX="${RUNNER_KEEP_RECENT_OUTBOX:-5}"
+
+LOCK_FILE="$BASE_DIR/.lock"
+
+now_ts() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
+
+ensure_dirs() {
+  mkdir -p "$INBOX" "$WORK" "$OUTBOX" "$DONE" "$FAILED" "$TMP"
+}
+
+get_free_mb() {
+  df -Pm "$BASE_DIR" | awk 'NR==2 {print $4}'
+}
+
+run_storage_maintenance() {
+  # Always do lightweight cleanup.
+  # Never remove an active controller upload.  Interrupted uploads and legacy
+  # tmp tarballs become reclaimable only after the normal retention window.
+  find "$TMP" -maxdepth 1 -type f \
+    \( -name '.upload-*.part' -o -name 'edgecraft_*.tar.gz' \) \
+    -mmin +"$RUNNER_CLEANUP_AGE_MINUTES" -delete >/dev/null 2>&1 || true
+  find "$INBOX" -maxdepth 1 -type f -name 'edgecraft_*.tar.gz' -mmin +"$RUNNER_CLEANUP_AGE_MINUTES" -exec rm -f {} + >/dev/null 2>&1 || true
+  find "$WORK" "$DONE" "$FAILED" -maxdepth 1 -type d -name 'edgecraft_*' -mmin +"$RUNNER_CLEANUP_AGE_MINUTES" -exec rm -rf {} + >/dev/null 2>&1 || true
+  find "$OUTBOX" -maxdepth 1 -type d -name 'edgecraft_*' -mmin +"$RUNNER_CLEANUP_AGE_MINUTES" -exec rm -rf {} + >/dev/null 2>&1 || true
+
+  local free_mb
+  free_mb="$(get_free_mb || echo 0)"
+  if [[ "$free_mb" =~ ^[0-9]+$ ]] && (( free_mb < RUNNER_MIN_FREE_MB )); then
+    echo "[edge-runner] low disk (${free_mb}MB < ${RUNNER_MIN_FREE_MB}MB), running aggressive cleanup"
+    ls -1t "$OUTBOX"/edgecraft_*.tar.gz 2>/dev/null | awk "NR>${RUNNER_KEEP_RECENT_OUTBOX}" | xargs -r rm -f >/dev/null 2>&1 || true
+    # Keep the newest N directories by mtime under outbox.
+    ls -1dt "$OUTBOX"/edgecraft_* 2>/dev/null | awk "NR>${RUNNER_KEEP_RECENT_OUTBOX}" | xargs -r rm -rf >/dev/null 2>&1 || true
+  fi
+}
+
+rand_id() {
+  # no openssl dependency
+  echo "job-$(date -u +%Y%m%dT%H%M%SZ)-$RANDOM$RANDOM"
+}
+
+pack_result() {
+  local job_id="$1"
+  local job_out_dir="$2"
+  local out_tgz="$OUTBOX/${job_id}.tar.gz"
+  tar -C "$job_out_dir" -czf "$out_tgz" .
+  echo "$out_tgz"
+}
+
+push_result_if_enabled() {
+  local out_tgz="$1"
+  if [[ "$PUSH_RESULTS" != "1" ]]; then
+    return 0
+  fi
+  if [[ -z "$PUSH_DEST" ]]; then
+    echo "[edge-runner] WARN: PUSH_RESULTS=1 but PUSH_DEST is empty; skip push" >&2
+    return 0
+  fi
+  if [[ ! "$PUSH_DEST" =~ ^([A-Za-z0-9_][A-Za-z0-9._-]*@)?([A-Za-z0-9_][A-Za-z0-9._-]*|\[[0-9A-Fa-f:.]+\]):[A-Za-z0-9_./-]+$ ]]; then
+    echo "[edge-runner] ERROR: PUSH_DEST must use a literal [user@]host:path form" >&2
+    return 1
+  fi
+  if [[ -z "$PUSH_SSH_KEY" || ! -f "$PUSH_SSH_KEY" ]]; then
+    echo "[edge-runner] ERROR: PUSH_RESULTS=1 requires an explicit PUSH_SSH_KEY" >&2
+    return 1
+  fi
+  local push_ssh_opts=(-i "$PUSH_SSH_KEY" -o IdentitiesOnly=yes -o BatchMode=yes)
+  if [[ "$PUSH_ACCEPT_NEW" == "1" ]]; then
+    push_ssh_opts+=(-o StrictHostKeyChecking=accept-new)
+  fi
+  scp "${push_ssh_opts[@]}" "$out_tgz" "$PUSH_DEST"
+}
+
+process_one_job_tgz() {
+  local job_tgz="$1"
+  local base_name
+  base_name="$(basename "$job_tgz")"
+
+  local work_tgz="$WORK/$base_name"
+  # Atomic move into work to "claim" the job.
+  mv "$job_tgz" "$work_tgz"
+
+  local job_dir="$WORK/${base_name%.tar.gz}"
+  rm -rf "$job_dir"
+  mkdir -p "$job_dir"
+  local cleanup_done=0
+  cleanup_job_dir() {
+    if [[ "$cleanup_done" != "1" ]]; then
+      rm -rf "$job_dir" >/dev/null 2>&1 || true
+      cleanup_done=1
+    fi
+  }
+
+  if ! tar -C "$job_dir" -xzf "$work_tgz"; then
+    local fallback_id
+    fallback_id="${base_name%.tar.gz}"
+    local fail_out_dir="$OUTBOX/$fallback_id"
+    rm -rf "$fail_out_dir"
+    mkdir -p "$fail_out_dir"
+    echo "[edge-runner] ERROR: failed to extract $base_name" > "$fail_out_dir/stderr.log"
+    echo "1" > "$fail_out_dir/exit_code"
+    cat > "$fail_out_dir/result.json" <<EOF
+{
+  "job_id": "$(printf '%s' "$fallback_id")",
+  "start_ts": "$(now_ts)",
+  "end_ts": "$(now_ts)",
+  "exit_code": 1,
+  "edge_host": "$(hostname)",
+  "edge_user": "$(id -un)",
+  "error": "extract_failed"
+}
+EOF
+    pack_result "$fallback_id" "$fail_out_dir" >/dev/null 2>&1 || true
+    mkdir -p "$FAILED/$fallback_id"
+    mv "$work_tgz" "$FAILED/$fallback_id/$base_name" || true
+    cleanup_job_dir
+    return 0
+  fi
+
+  local meta_file="$job_dir/meta.env"
+  local run_file="$job_dir/run.sh"
+  local payload_dir="$job_dir/payload"
+
+  local job_id=""
+  local timeout_secs="3600"
+  local workdir="."
+
+  if [[ -f "$meta_file" ]]; then
+    # trusted MVP: source arbitrary key=value pairs
+    # shellcheck disable=SC1090
+    source "$meta_file"
+    job_id="${JOB_ID:-}"
+    timeout_secs="${TIMEOUT_SECS:-$timeout_secs}"
+    workdir="${WORKDIR:-$workdir}"
+  fi
+  if [[ -z "$job_id" ]]; then
+    job_id="$(rand_id)"
+  fi
+
+  if [[ ! -f "$run_file" ]]; then
+    echo "[edge-runner] ERROR: missing run.sh in $base_name" >&2
+    local fail_out_dir="$OUTBOX/$job_id"
+    rm -rf "$fail_out_dir"
+    mkdir -p "$fail_out_dir"
+    echo "[edge-runner] ERROR: missing run.sh in $base_name" > "$fail_out_dir/stderr.log"
+    echo "1" > "$fail_out_dir/exit_code"
+    cat > "$fail_out_dir/result.json" <<EOF
+{
+  "job_id": "$(printf '%s' "$job_id")",
+  "start_ts": "$(now_ts)",
+  "end_ts": "$(now_ts)",
+  "exit_code": 1,
+  "edge_host": "$(hostname)",
+  "edge_user": "$(id -un)",
+  "error": "missing_run_sh"
+}
+EOF
+    pack_result "$job_id" "$fail_out_dir" >/dev/null 2>&1 || true
+    mkdir -p "$FAILED/$job_id"
+    cp -a "$job_dir/." "$FAILED/$job_id/" || true
+    mv "$work_tgz" "$FAILED/$job_id/$base_name" || true
+    cleanup_job_dir
+    return 0
+  fi
+  chmod +x "$run_file" || true
+
+  local start_ts end_ts
+  start_ts="$(now_ts)"
+
+  local job_out_dir="$OUTBOX/$job_id"
+  rm -rf "$job_out_dir"
+  mkdir -p "$job_out_dir"
+
+  local stdout_log="$job_out_dir/stdout.log"
+  local stderr_log="$job_out_dir/stderr.log"
+  local exit_code_file="$job_out_dir/exit_code"
+
+  local run_cwd="$job_dir/$workdir"
+  if [[ ! -d "$run_cwd" ]]; then
+    run_cwd="$job_dir"
+  fi
+
+  set +e
+  timeout --preserve-status "${timeout_secs}s" bash -lc "cd \"$run_cwd\" && \"$run_file\"" \
+    >"$stdout_log" 2>"$stderr_log"
+  local exit_code=$?
+  set -e
+
+  echo "$exit_code" > "$exit_code_file"
+  end_ts="$(now_ts)"
+
+  cat > "$job_out_dir/result.json" <<EOF
+{
+  "job_id": "$(printf '%s' "$job_id")",
+  "start_ts": "$start_ts",
+  "end_ts": "$end_ts",
+  "exit_code": $exit_code,
+  "edge_host": "$(hostname)",
+  "edge_user": "$(id -un)"
+}
+EOF
+
+  # Include meta + payload snapshot for debugging (optional but helpful)
+  if [[ -f "$meta_file" ]]; then
+    cp -a "$meta_file" "$job_out_dir/meta.env" || true
+  fi
+  if [[ -d "$payload_dir" ]]; then
+    mkdir -p "$job_out_dir/payload"
+    cp -a "$payload_dir/." "$job_out_dir/payload/" || true
+  fi
+
+  local out_tgz
+  out_tgz="$(pack_result "$job_id" "$job_out_dir")"
+
+  if [[ "$exit_code" -eq 0 ]]; then
+    mkdir -p "$DONE/$job_id"
+    mv "$work_tgz" "$DONE/$job_id/$base_name" || true
+  else
+    mkdir -p "$FAILED/$job_id"
+    mv "$work_tgz" "$FAILED/$job_id/$base_name" || true
+  fi
+
+  push_result_if_enabled "$out_tgz" || true
+  echo "[edge-runner] done job_id=$job_id exit_code=$exit_code out=$out_tgz"
+  cleanup_job_dir
+}
+
+process_inbox() {
+  ensure_dirs
+  run_storage_maintenance
+
+  # Single-instance lock. If another run is processing, just exit.
+  exec 9>"$LOCK_FILE"
+  if ! flock -n 9; then
+    echo "[edge-runner] another instance is running; exit"
+    return 0
+  fi
+
+  shopt -s nullglob
+  local jobs=("$INBOX"/*.tar.gz)
+  if [[ "${#jobs[@]}" -eq 0 ]]; then
+    echo "[edge-runner] inbox empty"
+    return 0
+  fi
+
+  # Process in time order for predictability.
+  IFS=$'\n' jobs=($(ls -1t "$INBOX"/*.tar.gz 2>/dev/null | tac)) || true
+  unset IFS
+
+  local job
+  for job in "${jobs[@]}"; do
+    if [[ -f "$job" ]]; then
+      process_one_job_tgz "$job" || true
+      # Per-job maintenance regardless of task type/profile type.
+      run_storage_maintenance
+    fi
+  done
+}
+
+usage() {
+  cat <<EOF
+EdgeCraft Edge Runner (MVP)
+
+Usage:
+  edgecraft-edge-runner process-inbox
+EOF
+}
+
+main() {
+  local cmd="${1:-}"
+  case "$cmd" in
+    process-inbox) process_inbox ;;
+    -h|--help|"") usage ;;
+    *)
+      echo "Unknown command: $cmd" >&2
+      usage
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"

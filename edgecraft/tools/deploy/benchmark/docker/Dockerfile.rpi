@@ -1,0 +1,54 @@
+# EdgeCraft Raspberry Pi Benchmark Image
+#
+# This image provides a minimal Python environment for running
+# inference benchmarks on Raspberry Pi devices (CPU only).
+#
+# Supported backends:
+#   - ONNX Runtime (CPU)
+#   - Ultralytics (CPU mode)
+#
+# Build:
+#   docker buildx build --platform linux/arm64 \
+#     -t edgecraft/rpi-benchmark:latest \
+#     -f Dockerfile.rpi .
+#
+# Or on RPi directly:
+#   docker build -t edgecraft/rpi-benchmark:latest -f Dockerfile.rpi .
+
+FROM python:3.11-slim-bookworm
+
+LABEL maintainer="EdgeCraft Authors"
+LABEL description="Raspberry Pi benchmark image for EdgeCraft edge inference"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # OpenCV dependencies
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    # General utilities
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+# Note: Using specific versions for reproducibility
+RUN pip install --no-cache-dir \
+    # ONNX Runtime for CPU inference
+    onnxruntime>=1.17.0 \
+    # Ultralytics YOLO (will use ONNX backend on CPU)
+    ultralytics>=8.0.0 \
+    # Core dependencies
+    numpy>=1.24.0 \
+    opencv-python-headless>=4.8.0 \
+    # System monitoring
+    psutil>=5.9.0 \
+    # YAML parsing
+    pyyaml>=6.0
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command - can be overridden
+CMD ["python", "--version"]

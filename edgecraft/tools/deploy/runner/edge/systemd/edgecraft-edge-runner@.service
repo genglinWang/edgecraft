@@ -1,0 +1,13 @@
+[Unit]
+Description=EdgeCraft Edge Runner (process inbox) for user %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/edgecraft-edge-runner.env
+User=%i
+ExecStart=/usr/local/bin/edgecraft-edge-runner process-inbox
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

@@ -1,0 +1,7 @@
+ARG BASE_IMAGE=dustynv/pytorch:1.10-r32.7.1
+FROM ${BASE_IMAGE}
+RUN python3 -m pip install --no-cache-dir \
+    numpy==1.19.5 onnx==1.11.0 onnxruntime==1.10.0 \
+    timm==0.5.4 pyyaml==6.0 psutil==5.9.8
+COPY check_runtime.py /opt/edgecraft/check_runtime.py
+WORKDIR /workspace
