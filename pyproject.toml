@@ -20,7 +20,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -97,6 +97,9 @@ edgecraft = "edgecraft.cli:main"
 [project.urls]
 Repository = "https://github.com/genglinWang/EdgeCraft"
 Issues = "https://github.com/genglinWang/EdgeCraft/issues"
+
+[tool.setuptools]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 
 [tool.setuptools.packages.find]
 include = ["edgecraft*"]

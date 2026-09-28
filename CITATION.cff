@@ -3,7 +3,7 @@ message: "If you use EdgeCraft in your research, please cite the accompanying pa
 type: software
 title: "EdgeCraft: Automated Model Crafting for Edge IoT"
 version: 0.1.0
-license: MIT
+license: AGPL-3.0-only
 repository-code: "https://github.com/genglinWang/EdgeCraft"
 authors:
   - family-names: Wang

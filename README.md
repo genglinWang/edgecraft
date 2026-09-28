@@ -1,6 +1,11 @@
-# EdgeCraft
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/edgecraft-logo-dark.png">
+    <img src="assets/edgecraft-logo-light.png" alt="EdgeCraft" width="640">
+  </picture>
+</p>
 
-**Automated Model Crafting for Edge IoT**
+<p align="center"><strong>Automated Model Crafting for Edge IoT</strong></p>
 
 EdgeCraft turns a task description, a dataset, and device constraints into a
 trained model verified on the target edge device. Its three core components are
@@ -123,6 +128,10 @@ are obtained separately.
 }
 ```
 
-See [CITATION.cff](CITATION.cff), [CONTRIBUTING.md](CONTRIBUTING.md), and
-[LICENSE](LICENSE). Third-party libraries, datasets, and model weights retain
-their own licenses.
+Copyright (c) 2026 EdgeCraft Authors. EdgeCraft is licensed under the
+[GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`).
+Third-party libraries, datasets, and model weights retain their own licenses;
+see [third-party notices](THIRD_PARTY_NOTICES.md).
+
+See [CITATION.cff](CITATION.cff) for citation metadata and
+[CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.

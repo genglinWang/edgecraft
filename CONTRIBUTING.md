@@ -17,6 +17,8 @@ git diff --check
 ```
 
 Keep changes focused and add a regression test when changing behavior.
+Contributions are provided under the project's AGPL-3.0-only license. Preserve
+applicable copyright and third-party license notices.
 Changes to synthesis or verification should retain the distinction between
 LLM proposals, device measurements, and verifier decisions. Hardware tests
 use locally supplied datasets, runtime images, and SSH credentials.
