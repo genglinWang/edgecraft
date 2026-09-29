@@ -16,6 +16,8 @@ the paper's separation between LLM proposals and measured acceptance decisions.
 Genglin Wang, Kaiwei Liu, Liekang Zeng, Wangsong Yin, Shangcheng Jin,
 Guoliang Xing, and Zhenyu Yan.
 
+[Paper](https://arxiv.org/abs/2609.35167) ·
+[Release v0.1.0](https://github.com/genglinWang/edgecraft/releases/tag/v0.1.0) ·
 [Design and code](PAPER_CODE_MAP.md) · [Devices](docs/devices.md) ·
 [Datasets](docs/datasets.md) · [Security](SECURITY.md)
 
@@ -124,7 +126,11 @@ are obtained separately.
   title  = {EdgeCraft: Automated Model Crafting for Edge IoT},
   author = {Genglin Wang and Kaiwei Liu and Liekang Zeng and Wangsong Yin
             and Shangcheng Jin and Guoliang Xing and Zhenyu Yan},
-  year   = {2026}
+  year   = {2026},
+  eprint = {2609.35167},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.LG},
+  url    = {https://arxiv.org/abs/2609.35167}
 }
 ```
 

@@ -95,8 +95,9 @@ knowledge = [
 edgecraft = "edgecraft.cli:main"
 
 [project.urls]
-Repository = "https://github.com/genglinWang/EdgeCraft"
-Issues = "https://github.com/genglinWang/EdgeCraft/issues"
+Repository = "https://github.com/genglinWang/edgecraft"
+Issues = "https://github.com/genglinWang/edgecraft/issues"
+Paper = "https://arxiv.org/abs/2609.35167"
 
 [tool.setuptools]
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]

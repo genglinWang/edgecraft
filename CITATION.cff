@@ -3,8 +3,9 @@ message: "If you use EdgeCraft in your research, please cite the accompanying pa
 type: software
 title: "EdgeCraft: Automated Model Crafting for Edge IoT"
 version: 0.1.0
+date-released: '2026-09-29'
 license: AGPL-3.0-only
-repository-code: "https://github.com/genglinWang/EdgeCraft"
+repository-code: "https://github.com/genglinWang/edgecraft"
 authors:
   - family-names: Wang
     given-names: Genglin
@@ -24,6 +25,10 @@ preferred-citation:
   type: generic
   title: "EdgeCraft: Automated Model Crafting for Edge IoT"
   year: 2026
+  url: "https://arxiv.org/abs/2609.35167"
+  identifiers:
+    - type: other
+      value: "arXiv:2609.35167"
   authors:
     - family-names: Wang
       given-names: Genglin
